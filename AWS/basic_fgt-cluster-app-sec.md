@@ -15,7 +15,7 @@ Esta basado en el módulo de [AWS Terraform Registry](https://registry.terraform
 
 ## Diagrama de arquitectura
 
-![FortiGate reference architecture overview](images/basic_fgt-ha-xlb-app-sec_01.png)
+![FortiGate reference architecture overview](images/basic_fgt-cluster-app-sec_01.png)
 
 ## Código Terraform para despligue fuera de CloudLab Portal
 
