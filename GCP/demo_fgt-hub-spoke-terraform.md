@@ -24,7 +24,7 @@ Las variables esperadas tienen formato JSON.
 
 - custom_vars:
 
-```ssh
+```json
 {
     "fgt_version": "7.4.9",
     "fgt_vpc_cidr": "10.0.0.0/23",
@@ -34,7 +34,7 @@ Las variables esperadas tienen formato JSON.
 
 - hub:
 
-```ssh
+```json
 [
     {
         "id": "HUB",
@@ -77,7 +77,7 @@ Buscaremos nuestro despliegue y pulsaremos en **Terraform outputs** para ver los
 
 ![Despliegue de SPOKE](images/demo_fgt-hub-spoke-terraform_08.png)
 
-2. Le damos a crear para crear el despliegue en la plataforma.
+2. Le damos al boton de **Create** para crear el despliegue en la plataforma.
 
 3. Las variables que podemos dar a modo de ejemplo:
 
@@ -85,7 +85,7 @@ Buscaremos nuestro despliegue y pulsaremos en **Terraform outputs** para ver los
 
 - custom_vars:
 
-```
+```json
 {
     "fgt_version": "7.4.9",
     "license_type": "payg",
@@ -95,7 +95,7 @@ Buscaremos nuestro despliegue y pulsaremos en **Terraform outputs** para ver los
 
 - spoke:
 
-```
+```json
 {
     "id": "spoke1",
     "cidr": "192.168.1.0/23"
@@ -112,7 +112,7 @@ xxxxx-k828pn-hubs
 
 4. Comenzar el proceso de despliegue.
 
-(Seguiremos los mismos pasos que el despliegue del HUB)
+(Seguiremos los mismos pasos que el despliegues anteriores)
 
 ![Despliegue de SPOKE](images/demo_fgt-hub-spoke-terraform_10.png)
 
@@ -125,11 +125,13 @@ Buscaremos nuestro despliegue en la pestaña **Home** y pulsaremos en **Terrafor
 - Acceso a FortiGate
 - Acceso al cluster de Kubernetes
 
+## Day N - Despliegue de aplicaciones
+
 ### Publicación de aplicaciones
 
 En este punto vamos a usar Terraform para configurar reglas de públicación en nuestro FortiGate. Los FortiGates se han desplegado con una API Key preconfigurada para poder usarla en el código Terraform con el provider de FortiOS. 
 
-```
+```bash
 provider "fortios" {
   hostname = local.fgt_merged.api_host
   token    = local.fgt_merged.api_key
@@ -140,4 +142,56 @@ Al igual que hemos hecho para el HUB y el SPOKE, vamos a desplegar un stack de T
 
 Para esto se ha preparado un repositorio, donde mediante variables JSON, vamos a poder configurar nuestros equipos. En este caso, en el SPOKE, donde se ha desplegado un nodo Kubernetes con una aplicación desplegada que queremos publicar a través del FortiGate. 
 
-1. Seleccionamos el repositorio. 
+1. Seleccionamos el repositorio de Terraform para FortiGate.
+
+![Despliegue de aplicaciones](images/demo_fgt-hub-spoke-terraform_12.png)
+
+2. Le damos al boton de **Create** para crear el despliegue en la plataforma.
+
+3. Las variables que podemos dar a modo de ejemplo:
+
+![Despliegue de aplicaciones](images/demo_fgt-hub-spoke-terraform_13.png)
+
+- fgt_secret_id:
+
+```
+xxxxxx-2h1gqy-fgt
+```
+
+- vips:
+
+```json
+{
+    "vip-ssh": { "mappedip": "192.168.10.2", "extport": "2222", "mappedport": "22"},
+    "vip-app": { "mappedip": "192.168.10.2", "extport": "80", "mappedport": "31000"}
+}
+```
+
+4. Comenzar el proceso de despliegue.
+
+(Seguiremos los mismos pasos que el despliegues anteriores, hasta que el estado del despliegue sea APPLY)
+
+![Despliegue de aplicaciones](images/demo_fgt-hub-spoke-terraform_14.png)
+
+
+5. Comprobación de creación de políticas. 
+
+Para confirmar que se han generado de manera correcta las políticas, tenemos diferentes maneras:
+
+- Postman o curl:
+
+```bash
+curl --location 'https://35.197.251.239:8443/api/v2/cmdb/firewall/policy' \
+--header 'Accept: application/json' \
+--header 'Authorization: ••••••'
+```
+
+Con Postman vistualization tool
+
+![Despliegue de aplicaciones](images/demo_fgt-hub-spoke-terraform_15.png)
+
+- Consola o GUI
+
+![Despliegue de aplicaciones](images/demo_fgt-hub-spoke-terraform_16.png)
+
+- FortiManager
