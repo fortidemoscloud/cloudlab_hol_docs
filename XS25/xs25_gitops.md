@@ -4,6 +4,10 @@ Esta demo consiste en un despliegue mediante Infraestructura como Código (IaC),
 
 El entorno de despliegue será una plataforma de ingeniería donde se han dado de alta los diferentes repositorios.
 
+## Esquema general
+
+![Esquema general](images/image01.png)
+
 ## Day 0 - Despliegue de infraestructura
 
 ### Despliegue de HUB
@@ -79,17 +83,26 @@ Buscaremos nuestro despliegue y pulsaremos en **Terraform outputs** para ver los
 
 2. Le damos al boton de **Create** para crear el despliegue en la plataforma.
 
-3. Las variables que podemos dar a modo de ejemplo:
+3. El despliegue se ha configurado para solicitar estas variables:
 
 ![Despliegue de SPOKE](images/demo_fgt-hub-spoke-terraform_09.png)
+
+4. Las variables que podemos dar a modo de ejemplo:
+
+> [!NOTE]
+> Para BYOL es necesario re-generar o crear el token en FortiFlex.
+
+![Despliegue de SPOKE](images/spoke_p4-01.png)
 
 - custom_vars:
 
 ```json
 {
-    "fgt_version": "7.4.9",
-    "license_type": "payg",
-    "spoke_vpc_cidr": "192.168.100.0/23"
+    "fgt_build": "build2829",
+    "license_type": "byol",
+    "fortiflex_tokens": "[149BBEC2D546643F562F]",
+    "number_azs": "1",
+    "fgt_number_peer_az": "1"
 }
 ```
 
@@ -98,7 +111,7 @@ Buscaremos nuestro despliegue y pulsaremos en **Terraform outputs** para ver los
 ```json
 {
     "id": "spoke1",
-    "cidr": "192.168.10.0/23"
+    "cidr": "192.168.10.0/24"
 }
 ```
 
@@ -108,15 +121,15 @@ Buscaremos nuestro despliegue y pulsaremos en **Terraform outputs** para ver los
 xxxxx-k828pn-hubs
 ```
 
-> **Nota:** Las variables necesarias para desplegar en el hiperescalar (GCP) están almacenadas de forma centralizada en la plataforma.
+> **Nota:** Las variables necesarias para desplegar en el hiperescalar (AWS) están almacenadas de forma centralizada en la plataforma.
 
-4. Comenzar el proceso de despliegue.
+5. Comenzar el proceso de despliegue.
 
-(Seguiremos los mismos pasos que el despliegues anteriores)
+(Seguiremos los mismos pasos que en despliegues anteriores)
 
 ![Despliegue de SPOKE](images/demo_fgt-hub-spoke-terraform_10.png)
 
-5. Datos de acceso al SPOKE
+6. Datos de acceso al SPOKE
 
 Buscaremos nuestro despliegue en la pestaña **Home** y pulsaremos en **Terraform outputs** para ver los datos de acceso al SPOKE y el ID de los secretos generados con la información para acceder al FortiGate y la instancia de Kubernetes desplegada.
 
@@ -124,6 +137,49 @@ Buscaremos nuestro despliegue en la pestaña **Home** y pulsaremos en **Terrafor
 
 - Acceso a FortiGate
 - Acceso al cluster de Kubernetes
+
+7. Throubleshooting
+
+Se pueden encontrar en la carpeta [utils](utils) unos scripts para faciltar el troubleshooting del despliegue en caso de que sea necesario:
+
+* read_gcp_secret.sh 
+
+```bash
+# Script to retrieve a GCP Secret Manager secret and output its value
+# Usage example:
+
+./read_gcp_secret.sh jvxxx-abCda-fgt
+```
+
+* ssh_connect_gcp_secret.sh
+
+```bash
+# Script to SSH connect to a host given a GCP Secret Manager secret id to retrieve the ssh private pem.
+# Usage example:
+
+./ssh_connect_gcp_secret.sh jvxxx-abcDe-ssh-key-pem 18.18.25.25
+```
+
+* k8s_get_config.sh
+
+```bash
+# Script to retrieve the kubeconfig file from a remote server using an SSH private key stored in GCP Secret Manager
+# Usage example: 
+
+./k8s_get_kube_config.sh jvxxx-abcDe-ssh-key-pem 18.18.25.25
+```
+
+* k8s_rollout_voteapp.sh
+
+```bash
+# Script to rollout the <voteapp> deployment in Kubernetes using a specified kubeconfig file
+# Arguments:
+# - config_name: Name of the kubeconfig file (folder ./kube-configs)
+# - --insecure: Optional flag to skip TLS verification
+# Usage example: 
+
+./k8s_rollout_voteapp.sh 18.18.25.25_config --insecure
+```
 
 ## Day N - Despliegue de aplicaciones
 
@@ -162,10 +218,14 @@ xxxxxx-2h1gqy-fgt
 
 ```json
 {
-    "vip-ssh": { "mappedip": "192.168.10.2", "extport": "2222", "mappedport": "22"},
-    "vip-app": { "mappedip": "192.168.10.2", "extport": "80", "mappedport": "31000"}
+    "vip-ssh": { "mappedip": "192.168.10.74", "extport": "2222", "mappedport": "22"},
+    "vip-k8s": { "mappedip": "192.168.10.74", "extport": "6443", "mappedport": "6443"},
+    "vip-app": { "mappedip": "192.168.10.74", "extport": "80", "mappedport": "31000"}
 }
 ```
+
+> [!NOTE]
+> Actualizar los datos de IP y puerto al despliegue realizado en el SPOKE.
 
 4. Comenzar el proceso de despliegue.
 
@@ -185,6 +245,9 @@ curl --location 'https://35.197.251.239:8443/api/v2/cmdb/firewall/policy' \
 --header 'Accept: application/json' \
 --header 'Authorization: ••••••'
 ```
+
+> [!NOTE]
+> Actualizar los datos de IP del FortiGate según salida del despliegue SPOKE.
 
 Con Postman vistualization tool
 
